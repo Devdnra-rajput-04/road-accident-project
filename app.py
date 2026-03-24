@@ -33,10 +33,14 @@ def data():
     """
 
 # 🔹 DASHBOARD PAGE
-@app.route("/dashboard")
+@app.route('/dashboard')
 def dashboard():
-    return render_template("dashboard.html")
+    total_accidents = len(data)
+    total_injuries = data['Number_of_Casualties'].sum()
 
+    return render_template("dashboard.html",
+                           total_accidents=total_accidents,
+                           total_injuries=total_injuries)
 
 # 🔹 RUN APP
 if __name__ == "__main__":
