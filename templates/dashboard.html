@@ -1,40 +1,109 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dashboard</title>
+<title>Dashboard</title>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-        body {
-            font-family: Arial;
-            background: linear-gradient(to right, #dfe9f3, #ffffff);
-            text-align: center;
-        }
+<style>
+body {
+    font-family: Arial;
+    background: #eef2f3;
+    text-align: center;
+}
 
-        h1 {
-            margin-top: 20px;
-            color: #2c3e50;
-        }
+h1 {
+    margin: 20px;
+}
 
-        .card {
-            width: 60%;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px gray;
-        }
-    </style>
+.container {
+    width: 90%;
+    margin: auto;
+}
+
+/* Cards */
+.cards {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    width: 40%;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px gray;
+}
+
+.card h2 {
+    color: #2c3e50;
+}
+
+/* Chart */
+.chart {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+/* Table */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+th, td {
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+
+th {
+    background: #2c3e50;
+    color: white;
+}
+</style>
 </head>
 
 <body>
 
-<h1>📊 Dashboard</h1>
+<h1>📊 Road Accident Dashboard</h1>
 
-<div class="card">
+<div class="container">
+
+<!-- Cards -->
+<div class="cards">
+    <div class="card">
+        <h2>Total Accidents</h2>
+        <p>{{ total_accidents }}</p>
+    </div>
+
+    <div class="card">
+        <h2>Total Injuries</h2>
+        <p>{{ total_injuries }}</p>
+    </div>
+</div>
+
+<!-- Chart -->
+<div class="chart">
     <canvas id="myChart"></canvas>
+</div>
+
+<!-- Table -->
+<table>
+    <tr>
+        <th>Injuries</th>
+    </tr>
+
+    {% for row in data %}
+    <tr>
+        <td>{{ row['Injuries'] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
 </div>
 
 <script>
@@ -45,7 +114,7 @@ new Chart(ctx, {
     data: {
         labels: ['Accidents', 'Injuries'],
         datasets: [{
-            label: 'Statistics',
+            label: 'Stats',
             data: [{{ total_accidents }}, {{ total_injuries }}],
             backgroundColor: ['red', 'blue']
         }]
