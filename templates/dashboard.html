@@ -1,28 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<style>
-    body {
-        font-family: Arial;
-        background: #f5f6fa;
-        text-align: center;
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(to right, #dfe9f3, #ffffff);
+            text-align: center;
+        }
+
+        h1 {
+            margin-top: 20px;
+            color: #2c3e50;
+        }
+
+        .card {
+            width: 60%;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px gray;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>📊 Dashboard</h1>
+
+<div class="card">
+    <canvas id="myChart"></canvas>
+</div>
+
+<script>
+const ctx = document.getElementById('myChart');
+
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Accidents', 'Injuries'],
+        datasets: [{
+            label: 'Statistics',
+           data: [{{ total_accidents | tojson }}, {{ total_injuries | tojson }}],
+            backgroundColor: ['red', 'blue']
+        }]
     }
+});
+</script>
 
-    h1 {
-        background: #2c3e50;
-        color: white;
-        padding: 20px;
-    }
-
-    .card {
-        background: white;
-        width: 500px;
-        margin: 30px auto;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
-    }
-</style>
-
-
-
+</body>
+</html>
