@@ -3,45 +3,27 @@ import pandas as pd
 
 app = Flask(__name__)
 
-# 🔹 Load dataset
-df = pd.read_csv("data.csv")
-
-# 🔹 HOME PAGE
+# Home page
 @app.route("/")
 def home():
-    total_accidents = len(df)
-    total_injuries = df["Injuries"].sum()
+    return render_template("index.html")
 
-    return render_template("index.html",
-                           total_accidents=total_accidents,
-                           total_injuries=total_injuries)
-
-# 🔹 DATA PAGE
-@app.route("/data")
-def data():
-    # sirf first 100 rows dikhayenge (fast load)
-    data_html = df.head(500).to_html(classes='table', index=False)
-
-    return f"""
-    <h2 style='text-align:center;'>Dataset Preview (Top 100 Rows)</h2>
-    <div style='padding:20px'>
-        {data_html}
-    </div>
-    <div style='text-align:center; margin-top:20px;'>
-        <a href="/">⬅ Back to Home</a>
-    </div>
-    """
-
-# 🔹 DASHBOARD PAGE
-@app.route('/dashboard')
+# Dashboard page
+@app.route("/dashboard")
 def dashboard():
-    total_accidents = len(data)
-    total_injuries = data['Number_of_Casualties'].sum()
+    # CSV file read
+    df = pd.read_csv("data.csv")
+
+    # Total accidents = total rows
+    total_accidents = len(df)
+
+    # Total injuries (column name same hona chahiye)
+    total_injuries = df['Injuries'].sum()
 
     return render_template("dashboard.html",
                            total_accidents=total_accidents,
                            total_injuries=total_injuries)
 
-# 🔹 RUN APP
+# Run app
 if __name__ == "__main__":
     app.run(debug=True)

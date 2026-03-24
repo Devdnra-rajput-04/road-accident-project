@@ -46,7 +46,7 @@ new Chart(ctx, {
         labels: ['Accidents', 'Injuries'],
         datasets: [{
             label: 'Statistics',
-           data: [{{ total_accidents | tojson }}, {{ total_injuries | tojson }}],
+            data: [{{ total_accidents }}, {{ total_injuries }}],
             backgroundColor: ['red', 'blue']
         }]
     }
