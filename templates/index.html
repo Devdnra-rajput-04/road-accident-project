@@ -1,81 +1,95 @@
 <!DOCTYPE html>
+
 <html>
 <head>
-    <title>Road Accident System</title>
+    <title>Road Accident Analysis System</title>
 
-    <style>
-        body {
-            font-family: Arial;
-            background: linear-gradient(to right, #eef2f3, #dfe9f3);
-            text-align: center;
-            margin: 0;
-            padding: 0;
-        }
+```
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(to right, #dfe9f3, #ffffff);
+    }
 
-        h1 {
-            margin-top: 40px;
-            color: #333;
-        }
+    .header {
+        background-color: #2c3e50;
+        padding: 20px;
+        color: white;
+        text-align: center;
+    }
 
-        .card {
-            background: white;
-            width: 400px;
-            margin: 50px auto;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
-        }
+    .container {
+        text-align: center;
+        margin-top: 50px;
+    }
 
-        .card p {
-            font-size: 16px;
-            color: #555;
-        }
+    .card {
+        background: white;
+        width: 400px;
+        margin: auto;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+    }
 
-        .stats {
-            margin: 20px 0;
-            font-size: 18px;
-        }
+    .stats {
+        margin: 20px 0;
+        font-size: 18px;
+    }
 
-        .stats b {
-            color: #000;
-        }
+    .btn {
+        display: inline-block;
+        padding: 12px 20px;
+        margin: 10px;
+        background: #ff9800;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: 0.3s;
+    }
 
-        .btn {
-            display: inline-block;
-            padding: 12px 20px;
-            margin: 10px;
-            background: #ff9800;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: 0.3s;
-        }
+    .btn:hover {
+        background: #e68900;
+    }
 
-        .btn:hover {
-            background: #e68900;
-        }
-    </style>
+    .footer {
+        text-align: center;
+        margin-top: 50px;
+        color: #555;
+    }
+</style>
+```
 
 </head>
 
 <body>
 
-<h1>🚗 Road Accident Analysis System</h1>
-
-<div class="card">
-
-    <p>Welcome to my project website</p>
-
-    <div class="stats">
-        <p><b>Total Records:</b> {{ total_accidents }}</p>
-        <p><b>Total Injuries:</b> {{ total_injuries }}</p>
-    </div>
-
-    <a href="/data" class="btn">View Data</a>
-    <a href="/dashboard" class="btn">View Dashboard</a>
-
+```
+<div class="header">
+    <h1>🚗 Road Accident Analysis System</h1>
+    <p>Data-driven insights for safer roads</p>
 </div>
+
+<div class="container">
+    <div class="card">
+
+        <div class="stats">
+            <p><b>Total Records:</b> {{ total_accidents }}</p>
+            <p><b>Total Injuries:</b> {{ total_injuries }}</p>
+        </div>
+
+        <a href="/data" class="btn">View Data</a>
+        <a href="/dashboard" class="btn">View Dashboard</a>
+
+    </div>
+</div>
+
+<div class="footer">
+    <p>© 2026 Road Accident Project | Developed by Devendra</p>
+</div>
+```
 
 </body>
 </html>
