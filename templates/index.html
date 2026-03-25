@@ -1,95 +1,63 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 <head>
-    <title>Road Accident Analysis System</title>
-
-```
-<style>
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: linear-gradient(to right, #dfe9f3, #ffffff);
-    }
-
-    .header {
-        background-color: #2c3e50;
-        padding: 20px;
-        color: white;
-        text-align: center;
-    }
-
-    .container {
-        text-align: center;
-        margin-top: 50px;
-    }
-
-    .card {
-        background: white;
-        width: 400px;
-        margin: auto;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
-    }
-
-    .stats {
-        margin: 20px 0;
-        font-size: 18px;
-    }
-
-    .btn {
-        display: inline-block;
-        padding: 12px 20px;
-        margin: 10px;
-        background: #ff9800;
-        color: white;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: bold;
-        transition: 0.3s;
-    }
-
-    .btn:hover {
-        background: #e68900;
-    }
-
-    .footer {
-        text-align: center;
-        margin-top: 50px;
-        color: #555;
-    }
-</style>
-```
-
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Road Accident Analysis System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
 </head>
-
 <body>
 
-```
-<div class="header">
-    <h1>🚗 Road Accident Analysis System</h1>
-    <p>Data-driven insights for safer roads</p>
-</div>
+<!-- NAVBAR -->
+<nav class="navbar">
+  <span class="nav-brand">🚗 RoadSafe Analytics</span>
+  <div class="desktop-links" style="display:flex;gap:6px;">
+    <a href="/" class="active">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/data">Data</a>
+  </div>
+  <div class="hamburger" onclick="toggleMenu(this)" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="nav-links-mobile">
+    <a href="/" class="active">🏠 Home</a>
+    <a href="/dashboard">📊 Dashboard</a>
+    <a href="/data">🗂 Data</a>
+  </div>
+</nav>
 
-<div class="container">
-    <div class="card">
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-card">
+    <div class="hero-badge">🚗</div>
+    <h1>Road Accident<br>Analysis System</h1>
+    <p>Data-driven insights for safer roads across India</p>
 
-        <div class="stats">
-            <p><b>Total Records:</b> {{ total_accidents }}</p>
-            <p><b>Total Injuries:</b> {{ total_injuries }}</p>
-        </div>
-
-        <a href="/data" class="btn">View Data</a>
-        <a href="/dashboard" class="btn">View Dashboard</a>
-
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-val">{{ total_accidents if total_accidents else '—' }}</div>
+        <div class="hero-stat-lbl">Total Records</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">{{ total_injuries if total_injuries else '—' }}</div>
+        <div class="hero-stat-lbl">Total Injuries</div>
+      </div>
     </div>
-</div>
 
-<div class="footer">
-    <p>© 2026 Road Accident Project | Developed by Devendra</p>
-</div>
-```
+    <div class="hero-actions">
+      <a href="/dashboard" class="btn btn-primary">📊 View Dashboard</a>
+      <a href="/data" class="btn btn-outline">🗂 Browse Data</a>
+    </div>
 
+    <p class="hero-footer">© 2026 Road Accident Project &nbsp;·&nbsp; Developed by Devendra Rajput</p>
+  </div>
+</section>
+
+<script>
+function toggleMenu(btn) {
+  btn.classList.toggle('open');
+  document.querySelector('.nav-links-mobile').classList.toggle('open');
+}
+</script>
 </body>
 </html>

@@ -1,126 +1,851 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Dashboard</title>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body {
-    font-family: Arial;
-    background: #eef2f3;
-    text-align: center;
-}
-
-h1 {
-    margin: 20px;
-}
-
-.container {
-    width: 90%;
-    margin: auto;
-}
-
-/* Cards */
-.cards {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 20px;
-}
-
-.card {
-    background: white;
-    padding: 20px;
-    width: 40%;
-    border-radius: 10px;
-    box-shadow: 0px 0px 10px gray;
-}
-
-.card h2 {
-    color: #2c3e50;
-}
-
-/* Chart */
-.chart {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-
-/* Table */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-}
-
-th, td {
-    padding: 10px;
-    border: 1px solid #ccc;
-}
-
-th {
-    background: #2c3e50;
-    color: white;
-}
-</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — Road Accident Analysis</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-
 <body>
 
-<h1>📊 Road Accident Dashboard</h1>
+<!-- NAVBAR -->
+<nav class="navbar">
+  <span class="nav-brand">🚗 RoadSafe Analytics</span>
+  <div class="desktop-links" style="display:flex;gap:6px;">
+    <a href="/">Home</a>
+    <a href="/dashboard" class="active">Dashboard</a>
+    <a href="/data">Data</a>
+  </div>
+  <div class="hamburger" onclick="toggleMenu(this)" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="nav-links-mobile">
+    <a href="/">🏠 Home</a>
+    <a href="/dashboard" class="active">📊 Dashboard</a>
+    <a href="/data">🗂 Data</a>
+  </div>
+</nav>
 
-<div class="container">
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="header-icon">📊</div>
+    <div>
+      <h1>Road Accident Analysis Dashboard</h1>
+      <p>Data-driven insights for safer roads · Real-time filtering</p>
+    </div>
+  </div>
+  <div class="page-header-right">
+    <div class="casualty-lbl">Number of Casualties</div>
+    <div class="casualty-val" id="header-total">{{ total_injuries if total_injuries else 0 }}</div>
+  </div>
+</div>
 
-<!-- Cards -->
-<div class="cards">
-    <div class="card">
-        <h2>Total Accidents</h2>
-        <p>{{ total_accidents }}</p>
+<!-- MAIN -->
+<div class="main" id="dashboard-content">
+
+  <!-- ACTION BAR -->
+  <div class="action-bar">
+    <div class="action-bar-left">
+      Showing &nbsp;<strong id="filter-summary">All data</strong>
+      &nbsp;<span id="loading-spinner" style="display:none;color:var(--orange);">⟳ Loading…</span>
+    </div>
+    <div class="action-bar-right">
+      <button class="btn btn-outline" onclick="resetFilters()">↺ Reset Filters</button>
+      <button class="btn btn-primary" onclick="downloadPDF()">⬇ Download PDF Report</button>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div>
+        <div class="kpi-label">Fatal Injuries</div>
+        <div class="kpi-value" id="kpi-fatal">{{ fatal if fatal else 0 }}</div>
+        <div class="kpi-sub">of total casualties</div>
+      </div>
+      <div class="kpi-donut-wrap">
+        <canvas id="donut1"></canvas>
+        <div class="kpi-pct" id="pct1">—</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div>
+        <div class="kpi-label">Serious Injuries</div>
+        <div class="kpi-value" id="kpi-serious">{{ serious if serious else 0 }}</div>
+        <div class="kpi-sub">of total casualties</div>
+      </div>
+      <div class="kpi-donut-wrap">
+        <canvas id="donut2"></canvas>
+        <div class="kpi-pct" id="pct2">—</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div>
+        <div class="kpi-label">Minor Injuries</div>
+        <div class="kpi-value" id="kpi-minor">{{ minor if minor else 0 }}</div>
+        <div class="kpi-sub">of total casualties</div>
+      </div>
+      <div class="kpi-donut-wrap">
+        <canvas id="donut3"></canvas>
+        <div class="kpi-pct" id="pct3">—</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div>
+        <div class="kpi-label">Bike / Moto Injuries</div>
+        <div class="kpi-value" id="kpi-bike">{{ bike_injuries if bike_injuries else 0 }}</div>
+        <div class="kpi-sub">of total casualties</div>
+      </div>
+      <div class="kpi-donut-wrap">
+        <canvas id="donut4"></canvas>
+        <div class="kpi-pct" id="pct4">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MID ROW: Vehicles | Trend | Road Type -->
+  <div class="grid-3col">
+
+    <div class="vehicle-panel card">
+      <div class="card-title">🚗 By Vehicle Type</div>
+      <div class="vehicle-item">
+        <span class="vehicle-emoji">🏍️</span>
+        <div>
+          <div class="vehicle-count" id="v-motorcycle">0</div>
+          <div class="vehicle-type">Motorcycle</div>
+        </div>
+      </div>
+      <div class="vehicle-item">
+        <span class="vehicle-emoji">🚗</span>
+        <div>
+          <div class="vehicle-count" id="v-car">0</div>
+          <div class="vehicle-type">Car</div>
+        </div>
+      </div>
+      <div class="vehicle-item">
+        <span class="vehicle-emoji">🚌</span>
+        <div>
+          <div class="vehicle-count" id="v-bus">0</div>
+          <div class="vehicle-type">Bus</div>
+        </div>
+      </div>
+      <div class="vehicle-item">
+        <span class="vehicle-emoji">🚲</span>
+        <div>
+          <div class="vehicle-count" id="v-bicycle">0</div>
+          <div class="vehicle-type">Bicycle</div>
+        </div>
+      </div>
+      <div class="vehicle-item">
+        <span class="vehicle-emoji">🚛</span>
+        <div>
+          <div class="vehicle-count" id="v-truck">0</div>
+          <div class="vehicle-type">Truck</div>
+        </div>
+      </div>
+      <div class="vehicle-item">
+        <span class="vehicle-emoji">🛺</span>
+        <div>
+          <div class="vehicle-count" id="v-auto">0</div>
+          <div class="vehicle-type">Auto</div>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
-        <h2>Total Injuries</h2>
-        <p>{{ total_injuries }}</p>
+    <div class="chart-card">
+      <div class="card-title">📈 Monthly Accidents Trend</div>
+      <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
     </div>
+
+    <div class="chart-card">
+      <div class="card-title">🛣️ Accidents by Road Type</div>
+      <div class="chart-wrap"><canvas id="roadChart"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM ROW: Gender | Light | Filters -->
+  <div class="grid-3col-bottom">
+
+    <div class="chart-card">
+      <div class="card-title">👤 Accidents by Driver Gender</div>
+      <div class="chart-wrap"><canvas id="genderChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-title">💡 Accidents by Light Condition</div>
+      <div class="chart-wrap"><canvas id="lightChart"></canvas></div>
+    </div>
+
+    <!-- FILTER PANEL -->
+    <div class="filter-panel card">
+      <div class="card-title">🔽 Filter Panel</div>
+
+      <div class="filter-section-label">Year</div>
+      <div class="filter-year-display" id="yearDisplay">All Years</div>
+      <input type="range" min="2018" max="2024" value="2018" id="yearSlider"
+             oninput="onYearSlide(this.value)" style="margin-bottom:4px;"/>
+      <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:var(--text-muted);">
+        <span>2018</span><span>2019</span><span>2020</span><span>2021</span><span>2022</span><span>2023</span><span>2024</span>
+      </div>
+      <div style="margin-top:4px;">
+        <button class="btn btn-outline" style="font-size:0.72rem;padding:4px 10px;" onclick="clearYear()">Clear Year</button>
+      </div>
+
+      <div class="filter-section-label">Weather Condition</div>
+      <div class="tag-grid" id="weather-tags">
+        <div class="tag active" data-group="weather" data-val="All" onclick="toggleTag(this)">All</div>
+        <div class="tag" data-group="weather" data-val="Clear" onclick="toggleTag(this)">☀️ Clear</div>
+        <div class="tag" data-group="weather" data-val="Fog" onclick="toggleTag(this)">🌫 Fog</div>
+        <div class="tag" data-group="weather" data-val="Rain" onclick="toggleTag(this)">🌧 Rain</div>
+        <div class="tag" data-group="weather" data-val="Storm" onclick="toggleTag(this)">⛈ Storm</div>
+      </div>
+
+      <div class="filter-section-label">State</div>
+      <div class="tag-grid" id="state-tags">
+        <div class="tag active" data-group="state" data-val="All" onclick="toggleTag(this)">All</div>
+        <div class="tag" data-group="state" data-val="Bihar" onclick="toggleTag(this)">Bihar</div>
+        <div class="tag" data-group="state" data-val="Delhi" onclick="toggleTag(this)">Delhi</div>
+        <div class="tag" data-group="state" data-val="Gujarat" onclick="toggleTag(this)">Gujarat</div>
+        <div class="tag" data-group="state" data-val="Karnataka" onclick="toggleTag(this)">Karnataka</div>
+        <div class="tag" data-group="state" data-val="Kerala" onclick="toggleTag(this)">Kerala</div>
+        <div class="tag" data-group="state" data-val="Maharashtra" onclick="toggleTag(this)">Maharashtra</div>
+        <div class="tag" data-group="state" data-val="Punjab" onclick="toggleTag(this)">Punjab</div>
+        <div class="tag" data-group="state" data-val="Rajasthan" onclick="toggleTag(this)">Rajasthan</div>
+        <div class="tag" data-group="state" data-val="Tamil Nadu" onclick="toggleTag(this)">Tamil Nadu</div>
+        <div class="tag" data-group="state" data-val="UP" onclick="toggleTag(this)">UP</div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="applyFilters()">
+          ✓ Analyze & Update Charts
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EXTRA CHARTS ROW: Cause | Yearly Trend -->
+  <div class="grid-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+    <div class="chart-card">
+      <div class="card-title">⚠️ Accidents by Cause</div>
+      <div class="chart-wrap"><canvas id="causeChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">📅 Year-wise Trend</div>
+      <div class="chart-wrap"><canvas id="yearlyChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ML PREDICTION PANEL -->
+  <div class="card" style="padding:20px;margin-bottom:14px;">
+    <div class="card-title">🤖 ML Severity Predictor — Predict Accident Severity</div>
+    <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:16px;">
+      Enter accident details below to predict severity using a trained Random Forest model.
+    </p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:14px;">
+
+      <div class="pred-field">
+        <label>Road Type</label>
+        <select id="p-road">
+          <option>Highway</option><option>Expressway</option>
+          <option>City Road</option><option>Village Road</option>
+        </select>
+      </div>
+      <div class="pred-field">
+        <label>Weather</label>
+        <select id="p-weather">
+          <option>Clear</option><option>Rain</option><option>Fog</option><option>Storm</option>
+        </select>
+      </div>
+      <div class="pred-field">
+        <label>Light Condition</label>
+        <select id="p-light">
+          <option>Daylight</option><option>Night</option><option>Dawn/Dusk</option>
+        </select>
+      </div>
+      <div class="pred-field">
+        <label>Driver Gender</label>
+        <select id="p-gender">
+          <option>Male</option><option>Female</option>
+        </select>
+      </div>
+      <div class="pred-field">
+        <label>Helmet/Seatbelt</label>
+        <select id="p-helmet">
+          <option>Yes</option><option>No</option>
+        </select>
+      </div>
+      <div class="pred-field">
+        <label>Primary Vehicle</label>
+        <select id="p-vehicle">
+          <option>Motorcycle</option><option>Car</option><option>Bus</option>
+          <option>Bicycle</option><option>Truck</option><option>Auto</option>
+        </select>
+      </div>
+      <div class="pred-field">
+        <label>Cause</label>
+        <select id="p-cause">
+          <option>Overspeed</option><option>Drunk Driving</option>
+          <option>Bad Weather</option><option>Distracted</option>
+          <option>Signal Violation</option>
+        </select>
+      </div>
+      <div class="pred-field">
+        <label>Driver Age</label>
+        <input type="number" id="p-age" value="28" min="16" max="80"/>
+      </div>
+      <div class="pred-field">
+        <label>Speed (km/h)</label>
+        <input type="number" id="p-speed" value="60" min="0" max="200"/>
+      </div>
+      <div class="pred-field">
+        <label>Vehicles Involved</label>
+        <input type="number" id="p-vehicles" value="2" min="1" max="10"/>
+      </div>
+      <div class="pred-field">
+        <label>Year</label>
+        <input type="number" id="p-year" value="2024" min="2018" max="2024"/>
+      </div>
+
+    </div>
+
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="runPrediction()">🔮 Predict Severity</button>
+      <div id="pred-result" style="display:none;padding:12px 20px;border-radius:8px;font-weight:700;font-family:'Rajdhani',sans-serif;font-size:1.1rem;">
+      </div>
+      <div id="pred-probs" style="display:none;font-size:0.78rem;color:var(--text-dim);"></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- PDF Loading Overlay -->
+<div id="pdf-overlay">
+  <div class="pdf-spinner"></div>
+  <p>Generating PDF Report…</p>
 </div>
 
-<!-- Chart -->
-<div class="chart">
-    <canvas id="myChart"></canvas>
-</div>
+<!-- Toast -->
+<div id="toast"></div>
 
-<!-- Table -->
-<table>
-    <tr>
-        <th>Injuries</th>
-    </tr>
-
-    {% for row in data %}
-    <tr>
-        <td>{{ row['Injuries'] }}</td>
-    </tr>
-    {% endfor %}
-</table>
-
-</div>
-
+<!-- ── INITIAL DATA FROM FLASK ─────────────────────────────── -->
 <script>
-const ctx = document.getElementById('myChart');
-
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: ['Accidents', 'Injuries'],
-        datasets: [{
-            label: 'Stats',
-            data: [{{ total_accidents }}, {{ total_injuries }}],
-            backgroundColor: ['red', 'blue']
-        }]
-    }
-});
+const INITIAL = {
+  total:    {{ total_injuries   | default(0) }},
+  fatal:    {{ fatal            | default(0) }},
+  serious:  {{ serious          | default(0) }},
+  minor:    {{ minor            | default(0) }},
+  bike:     {{ bike_injuries    | default(0) }},
+  monthly:      {{ monthly_trend   | tojson | default('{}') }},
+  roadTypes:    {{ road_types      | tojson | default('{}') }},
+  gender:       {{ gender          | tojson | default('{}') }},
+  light:        {{ light           | tojson | default('{}') }},
+  vehicleCounts:{{ vehicle_counts  | tojson | default('{}') }},
+  causeCounts:  {{ cause_counts    | tojson | default('{}') }},
+  yearlyTrend:  {{ yearly_trend    | tojson | default('{}') }},
+};
 </script>
 
+<script>
+/* ═══════════════════════════════════════════════════════
+   CHART.JS SETUP
+   ═══════════════════════════════════════════════════════ */
+const ORANGE      = '#e67e22';
+const ORANGE_DARK = '#c0392b';
+const ORANGE_LT   = '#f39c12';
+const COLORS      = [ORANGE, ORANGE_DARK, ORANGE_LT, '#d35400', '#a93226', '#8e44ad'];
+
+Chart.defaults.color       = '#ccd6e0';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+Chart.defaults.font.family = "'Nunito', sans-serif";
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/* ── Mini KPI Donuts ─────────────────────────────────── */
+const donutCharts = {};
+function mkDonut(id, pct, color) {
+  const inst = new Chart(document.getElementById(id), {
+    type: 'doughnut',
+    data: { datasets: [{ data:[pct,100-pct], backgroundColor:[color,'rgba(255,255,255,0.06)'], borderWidth:0 }] },
+    options: { cutout:'74%', plugins:{legend:{display:false},tooltip:{enabled:false}}, animation:{duration:600} }
+  });
+  donutCharts[id] = inst;
+}
+function updateDonut(id, pct, label) {
+  const ch = donutCharts[id];
+  if (!ch) return;
+  ch.data.datasets[0].data = [pct, 100 - pct];
+  ch.update('active');
+  document.getElementById(label).textContent = pct + '%';
+}
+
+mkDonut('donut1', 0, ORANGE_DARK);
+mkDonut('donut2', 0, ORANGE);
+mkDonut('donut3', 0, ORANGE_LT);
+mkDonut('donut4', 0, '#e74c3c');
+
+/* ── Trend Line ──────────────────────────────────────── */
+const trendChart = new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: MONTHS,
+    datasets: [{
+      label:'Accidents', data: MONTHS.map((_,i)=>INITIAL.monthly[i+1]||0),
+      borderColor:ORANGE, backgroundColor:'rgba(230,126,34,0.1)',
+      fill:true, tension:0.42, pointRadius:3, pointHoverRadius:6,
+      pointBackgroundColor:ORANGE, borderWidth:2.5,
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#112035',borderColor:ORANGE,borderWidth:1,padding:10} },
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{font:{size:10}}},
+      y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{font:{size:10}}}
+    }
+  }
+});
+
+/* ── Road Type Bar ───────────────────────────────────── */
+const roadChart = new Chart(document.getElementById('roadChart'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(INITIAL.roadTypes),
+    datasets: [{ label:'Accidents', data:Object.values(INITIAL.roadTypes), backgroundColor:COLORS, borderRadius:5 }]
+  },
+  options: {
+    indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#112035',borderColor:ORANGE,borderWidth:1,padding:10}},
+    scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+  }
+});
+
+/* ── Gender Doughnut ─────────────────────────────────── */
+const genderChart = new Chart(document.getElementById('genderChart'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(INITIAL.gender),
+    datasets: [{ data:Object.values(INITIAL.gender), backgroundColor:[ORANGE_DARK,ORANGE_LT,ORANGE,'#8e44ad'], borderWidth:3, borderColor:'#112035', hoverBorderColor:'#fff' }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false, cutout:'58%',
+    plugins:{
+      legend:{position:'right',labels:{font:{size:11},boxWidth:12,padding:12,color:'#ccd6e0'}},
+      tooltip:{backgroundColor:'#112035',borderColor:ORANGE,borderWidth:1,padding:10}
+    }
+  }
+});
+
+/* ── Light Condition Pie ─────────────────────────────── */
+const lightChart = new Chart(document.getElementById('lightChart'), {
+  type: 'pie',
+  data: {
+    labels: Object.keys(INITIAL.light),
+    datasets: [{ data:Object.values(INITIAL.light), backgroundColor:COLORS.slice(0,Object.keys(INITIAL.light).length), borderWidth:3, borderColor:'#112035', hoverBorderColor:'#fff' }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{position:'right',labels:{font:{size:11},boxWidth:12,padding:12,color:'#ccd6e0'}},
+      tooltip:{backgroundColor:'#112035',borderColor:ORANGE,borderWidth:1,padding:10}
+    }
+  }
+});
+
+/* ── Cause Bar ───────────────────────────────────────── */
+const causeChart = new Chart(document.getElementById('causeChart'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(INITIAL.causeCounts),
+    datasets: [{ label:'Accidents', data:Object.values(INITIAL.causeCounts), backgroundColor:COLORS, borderRadius:5 }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#112035',borderColor:ORANGE,borderWidth:1,padding:10}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{font:{size:10}}}}
+  }
+});
+
+/* ── Yearly Trend ────────────────────────────────────── */
+const yearlyChart = new Chart(document.getElementById('yearlyChart'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(INITIAL.yearlyTrend).map(String),
+    datasets: [{
+      label:'Accidents', data:Object.values(INITIAL.yearlyTrend),
+      backgroundColor:COLORS, borderRadius:5
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#112035',borderColor:ORANGE,borderWidth:1,padding:10}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{font:{size:10}}}}
+  }
+});
+
+// Initial KPI + donuts from Flask data
+updateAllKPIs(INITIAL);
+updateVehicleCounts(INITIAL.vehicleCounts || {});
+
+
+/* ═══════════════════════════════════════════════════════
+   FILTER STATE
+   ═══════════════════════════════════════════════════════ */
+let activeYear    = null;
+let activeWeather = 'All';
+let activeStates  = ['All'];
+
+function toggleTag(el) {
+  const group     = el.dataset.group;
+  const val       = el.dataset.val;
+  const container = el.closest('.tag-grid');
+
+  if (val === 'All') {
+    container.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    if (group === 'weather') activeWeather = 'All';
+    if (group === 'state')   activeStates  = ['All'];
+  } else {
+    const allBtn = container.querySelector('[data-val="All"]');
+    if (allBtn) allBtn.classList.remove('active');
+
+    if (group === 'weather') {
+      container.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      activeWeather = val;
+    }
+    if (group === 'state') {
+      el.classList.toggle('active');
+      activeStates = [...container.querySelectorAll('.tag.active')].map(t => t.dataset.val);
+      if (activeStates.length === 0) {
+        allBtn && allBtn.classList.add('active');
+        activeStates = ['All'];
+      }
+    }
+  }
+}
+
+function onYearSlide(val) {
+  activeYear = parseInt(val);
+  document.getElementById('yearDisplay').textContent = val;
+}
+
+function clearYear() {
+  activeYear = null;
+  document.getElementById('yearDisplay').textContent = 'All Years';
+  document.getElementById('yearSlider').value = 2018;
+}
+
+function resetFilters() {
+  clearYear();
+  activeWeather = 'All';
+  activeStates  = ['All'];
+
+  document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+  document.querySelector('#weather-tags [data-val="All"]').classList.add('active');
+  document.querySelector('#state-tags  [data-val="All"]').classList.add('active');
+
+  applyFilters(true);
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   REAL API FILTER — fetches from /api/filter
+   ═══════════════════════════════════════════════════════ */
+async function applyFilters(silent = false) {
+  // Build URL params
+  const params = new URLSearchParams();
+  if (activeYear)              params.append('year',    activeYear);
+  if (activeWeather !== 'All') params.append('weather', activeWeather);
+  if (!activeStates.includes('All')) {
+    activeStates.forEach(s => params.append('state', s));
+  }
+
+  // Update summary text
+  const parts = [];
+  if (activeYear)                      parts.push(`Year: ${activeYear}`);
+  if (activeWeather !== 'All')         parts.push(`Weather: ${activeWeather}`);
+  if (!activeStates.includes('All'))   parts.push(`States: ${activeStates.join(', ')}`);
+  document.getElementById('filter-summary').textContent = parts.length ? parts.join(' · ') : 'All data';
+
+  // Show loading
+  document.getElementById('loading-spinner').style.display = 'inline';
+
+  try {
+    const resp = await fetch('/api/filter?' + params.toString());
+    if (!resp.ok) throw new Error('API error');
+    const data = await resp.json();
+
+    updateAllKPIs(data);
+    updateAllCharts(data);
+    updateVehicleCounts(data.vehicle_counts || {});
+
+    if (!silent) showToast('Filters applied ✓');
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to fetch filtered data.');
+  } finally {
+    document.getElementById('loading-spinner').style.display = 'none';
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   UPDATE FUNCTIONS
+   ═══════════════════════════════════════════════════════ */
+function updateAllKPIs(data) {
+  const total   = data.total_injuries  || 0;
+  const fatal   = data.fatal           || 0;
+  const serious = data.serious         || 0;
+  const minor   = data.minor           || 0;
+  const bike    = data.bike_injuries   || 0;
+
+  document.getElementById('header-total').textContent = total.toLocaleString();
+  document.getElementById('kpi-fatal').textContent    = fatal.toLocaleString();
+  document.getElementById('kpi-serious').textContent  = serious.toLocaleString();
+  document.getElementById('kpi-minor').textContent    = minor.toLocaleString();
+  document.getElementById('kpi-bike').textContent     = bike.toLocaleString();
+
+  const fPct = total ? Math.round(fatal   / total * 100) : 0;
+  const sPct = total ? Math.round(serious / total * 100) : 0;
+  const mPct = total ? Math.round(minor   / total * 100) : 0;
+  const bPct = total ? Math.round(bike    / total * 100) : 0;
+
+  updateDonut('donut1', fPct, 'pct1');
+  updateDonut('donut2', sPct, 'pct2');
+  updateDonut('donut3', mPct, 'pct3');
+  updateDonut('donut4', bPct, 'pct4');
+}
+
+function setChartData(chart, labels, values) {
+  chart.data.labels = labels;
+  chart.data.datasets[0].data = values;
+  chart.update('active');
+}
+
+function updateAllCharts(data) {
+  // Trend
+  const monthly = data.monthly_trend || {};
+  trendChart.data.datasets[0].data = MONTHS.map((_,i) => monthly[i+1] || 0);
+  trendChart.update('active');
+
+  // Road type
+  const rt = data.road_types || {};
+  setChartData(roadChart, Object.keys(rt), Object.values(rt));
+
+  // Gender
+  const g = data.gender || {};
+  setChartData(genderChart, Object.keys(g), Object.values(g));
+
+  // Light
+  const l = data.light || {};
+  setChartData(lightChart, Object.keys(l), Object.values(l));
+
+  // Cause
+  const c = data.cause_counts || {};
+  setChartData(causeChart, Object.keys(c), Object.values(c));
+
+  // Yearly
+  const y = data.yearly_trend || {};
+  setChartData(yearlyChart, Object.keys(y).map(String), Object.values(y));
+}
+
+function updateVehicleCounts(vc) {
+  const map = {
+    'Motorcycle': 'v-motorcycle',
+    'Car':        'v-car',
+    'Bus':        'v-bus',
+    'Bicycle':    'v-bicycle',
+    'Truck':      'v-truck',
+    'Auto':       'v-auto',
+  };
+  Object.entries(map).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (vc[key] || 0).toLocaleString();
+  });
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   ML PREDICTION
+   ═══════════════════════════════════════════════════════ */
+async function runPrediction() {
+  const payload = {
+    Road_Type:           document.getElementById('p-road').value,
+    Weather:             document.getElementById('p-weather').value,
+    Light_Condition:     document.getElementById('p-light').value,
+    Driver_Gender:       document.getElementById('p-gender').value,
+    Helmet_Seatbelt_Used:document.getElementById('p-helmet').value,
+    Primary_Vehicle:     document.getElementById('p-vehicle').value,
+    Cause:               document.getElementById('p-cause').value,
+    Driver_Age:          document.getElementById('p-age').value,
+    Estimated_Speed_kmh: document.getElementById('p-speed').value,
+    Vehicles_Involved:   document.getElementById('p-vehicles').value,
+    Year:                document.getElementById('p-year').value,
+  };
+
+  const btn = document.querySelector('[onclick="runPrediction()"]');
+  btn.textContent = '⏳ Predicting…';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch('/api/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await resp.json();
+
+    const resDiv  = document.getElementById('pred-result');
+    const probDiv = document.getElementById('pred-probs');
+
+    if (result.error) {
+      resDiv.style.display = 'block';
+      resDiv.style.background = 'rgba(192,57,43,0.2)';
+      resDiv.style.border = '1px solid #c0392b';
+      resDiv.style.color = '#e74c3c';
+      resDiv.textContent = 'Error: ' + result.error;
+    } else {
+      const colorMap = { Fatal:'rgba(192,57,43,0.25)', Serious:'rgba(230,126,34,0.25)', Minor:'rgba(39,174,96,0.25)' };
+      const borderMap = { Fatal:'#c0392b', Serious:'#e67e22', Minor:'#27ae60' };
+      const emojiMap  = { Fatal:'☠️', Serious:'⚠️', Minor:'🟡' };
+
+      resDiv.style.display = 'block';
+      resDiv.style.background = colorMap[result.severity] || 'rgba(255,255,255,0.05)';
+      resDiv.style.border = `1px solid ${borderMap[result.severity] || '#888'}`;
+      resDiv.style.color = '#fff';
+      resDiv.textContent = `${emojiMap[result.severity] || ''} Predicted: ${result.severity}`;
+
+      const probs = result.probabilities || {};
+      probDiv.style.display = 'block';
+      probDiv.innerHTML = Object.entries(probs)
+        .map(([k,v]) => `<span style="margin-right:12px;">${k}: <strong style="color:var(--orange)">${(v*100).toFixed(1)}%</strong></span>`)
+        .join('');
+    }
+  } catch(err) {
+    showToast('Prediction request failed.');
+    console.error(err);
+  } finally {
+    btn.textContent = '🔮 Predict Severity';
+    btn.disabled = false;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   PDF DOWNLOAD
+   ═══════════════════════════════════════════════════════ */
+async function downloadPDF() {
+  const overlay = document.getElementById('pdf-overlay');
+  overlay.classList.add('show');
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+
+    doc.setFillColor(192, 57, 43);
+    doc.rect(0, 0, W, 22, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(16);
+    doc.text('Road Accident Analysis Dashboard', 14, 14);
+    doc.setFontSize(9);
+    doc.setFont('helvetica','normal');
+    doc.text(`Generated: ${new Date().toLocaleString()}`, W - 14, 14, {align:'right'});
+
+    doc.setTextColor(80, 80, 80);
+    doc.setFontSize(9);
+    const summary = document.getElementById('filter-summary').textContent;
+    doc.text(`Filter: ${summary}`, 14, 30);
+
+    const kpis = [
+      { label:'Total Casualties',  val: document.getElementById('header-total').textContent },
+      { label:'Fatal',             val: document.getElementById('kpi-fatal').textContent    },
+      { label:'Serious',           val: document.getElementById('kpi-serious').textContent  },
+      { label:'Minor',             val: document.getElementById('kpi-minor').textContent    },
+      { label:'Bike Injuries',     val: document.getElementById('kpi-bike').textContent     },
+    ];
+
+    const boxW=50, boxH=18, startX=14, startY=35;
+    kpis.forEach((k, i) => {
+      const x = startX + i * (boxW + 4);
+      doc.setFillColor(250, 240, 230);
+      doc.setDrawColor(230, 126, 34);
+      doc.roundedRect(x, startY, boxW, boxH, 3, 3, 'FD');
+      doc.setTextColor(230, 126, 34);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(13);
+      doc.text(k.val, x + boxW/2, startY + 10, {align:'center'});
+      doc.setTextColor(80, 80, 80);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(7.5);
+      doc.text(k.label, x + boxW/2, startY + 15, {align:'center'});
+    });
+
+    const chartIds    = ['trendChart','roadChart','genderChart','lightChart'];
+    const chartTitles = ['Monthly Trend','Road Type','Gender Split','Light Condition'];
+    const positions   = [
+      {x:14,  y:62, w:130, h:60},
+      {x:152, y:62, w:125, h:60},
+      {x:14,  y:130, w:130, h:60},
+      {x:152, y:130, w:125, h:60},
+    ];
+
+    for (let i = 0; i < chartIds.length; i++) {
+      const canvas = document.getElementById(chartIds[i]);
+      const imgData = canvas.toDataURL('image/png');
+      const pos = positions[i];
+      doc.setDrawColor(220,220,220);
+      doc.setFillColor(250,250,250);
+      doc.roundedRect(pos.x, pos.y, pos.w, pos.h, 3, 3, 'FD');
+      doc.setTextColor(192, 57, 43);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(8);
+      doc.text(chartTitles[i], pos.x + 4, pos.y + 7);
+      doc.addImage(imgData, 'PNG', pos.x + 2, pos.y + 10, pos.w - 4, pos.h - 12);
+    }
+
+    doc.setFillColor(192, 57, 43);
+    doc.rect(0, H - 8, W, 8, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.text('© 2026 Road Accident Analysis Project — Developed by Devendra Rajput', W/2, H - 3, {align:'center'});
+
+    doc.save('road_accident_report.pdf');
+    showToast('PDF downloaded ✓');
+  } catch(err) {
+    console.error(err);
+    showToast('PDF generation failed.');
+  } finally {
+    overlay.classList.remove('show');
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════════════════ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function toggleMenu(btn) {
+  btn.classList.toggle('open');
+  document.querySelector('.nav-links-mobile').classList.toggle('open');
+}
+</script>
 </body>
 </html>

@@ -1,23 +1,172 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Data View</title>
-    <style>
-        body { font-family: Arial; padding: 20px; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid black; padding: 8px; text-align: center; }
-        th { background-color: orange; color: white; }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Data View — Road Accident Analysis</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
-
 <body>
 
-<h2>🚗 Road Accident Data (Top 200 Rows)</h2>
+<!-- NAVBAR -->
+<nav class="navbar">
+  <span class="nav-brand">🚗 RoadSafe Analytics</span>
+  <div class="desktop-links" style="display:flex;gap:6px;">
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/data" class="active">Data</a>
+  </div>
+  <div class="hamburger" onclick="toggleMenu(this)" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="nav-links-mobile">
+    <a href="/">🏠 Home</a>
+    <a href="/dashboard">📊 Dashboard</a>
+    <a href="/data" class="active">🗂 Data</a>
+  </div>
+</nav>
 
-{{ tables|safe }}
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="header-icon">🗂</div>
+    <div>
+      <h1>Road Accident Raw Data</h1>
+      <p>Top 200 records from the dataset</p>
+    </div>
+  </div>
+</div>
 
-<br><br>
-<a href="/">⬅ Back to Home</a>
+<div class="data-page">
 
+  <!-- ACTION BAR -->
+  <div class="action-bar">
+    <div class="action-bar-left">
+      Showing top <strong>200 rows</strong> — scroll horizontally to see all columns
+    </div>
+    <div class="action-bar-right">
+      <input id="search-input" type="text" placeholder="🔍  Search table…"
+        oninput="filterTable(this.value)"
+        style="padding:7px 12px;border-radius:7px;border:1px solid rgba(230,126,34,0.3);
+               background:var(--bg2);color:var(--text);font-size:0.8rem;font-family:inherit;
+               outline:none;width:200px;"/>
+      <button class="btn btn-primary" onclick="downloadTablePDF()">⬇ Download PDF</button>
+      <a href="/" class="btn btn-outline">← Back to Home</a>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap" id="table-container">
+    {{ tables | safe }}
+  </div>
+
+</div>
+
+<!-- PDF Loading Overlay -->
+<div id="pdf-overlay">
+  <div class="pdf-spinner"></div>
+  <p>Generating PDF Report…</p>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+function toggleMenu(btn) {
+  btn.classList.toggle('open');
+  document.querySelector('.nav-links-mobile').classList.toggle('open');
+}
+
+// ── Apply table class from Flask's to_html ────────────────
+document.querySelectorAll('table').forEach(t => {
+  t.classList.add('data-table');
+});
+
+// ── Live search filter ─────────────────────────────────────
+function filterTable(query) {
+  const rows = document.querySelectorAll('.data-table tbody tr');
+  const q = query.toLowerCase();
+  rows.forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+// ── PDF Download (data table) ─────────────────────────────
+async function downloadTablePDF() {
+  const overlay = document.getElementById('pdf-overlay');
+  overlay.classList.add('show');
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+
+    // Header
+    doc.setFillColor(192, 57, 43);
+    doc.rect(0, 0, W, 20, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(14);
+    doc.text('Road Accident Data Export (Top 200 Rows)', 14, 13);
+    doc.setFontSize(8);
+    doc.setFont('helvetica','normal');
+    doc.text(`Generated: ${new Date().toLocaleString()}`, W - 14, 13, {align:'right'});
+
+    // Collect table data
+    const table = document.querySelector('.data-table');
+    if (!table) throw new Error('No table found');
+
+    const headers = [...table.querySelectorAll('thead th')].map(th => th.textContent.trim());
+    const rows    = [...table.querySelectorAll('tbody tr')]
+      .filter(r => r.style.display !== 'none')
+      .map(r => [...r.querySelectorAll('td')].map(td => td.textContent.trim()));
+
+    doc.autoTable({
+      head: [headers],
+      body: rows,
+      startY: 26,
+      styles: { fontSize: 6.5, cellPadding: 2, textColor: [50,50,50] },
+      headStyles: {
+        fillColor: [230, 126, 34],
+        textColor: [255,255,255],
+        fontStyle: 'bold',
+        fontSize: 7,
+      },
+      alternateRowStyles: { fillColor: [248, 248, 248] },
+      margin: { left: 8, right: 8 },
+      didDrawPage: (data) => {
+        // Footer on each page
+        doc.setFillColor(192, 57, 43);
+        doc.rect(0, H - 7, W, 7, 'F');
+        doc.setTextColor(255,255,255);
+        doc.setFontSize(6.5);
+        doc.text(
+          `© 2026 Road Accident Analysis — Page ${data.pageNumber}`,
+          W/2, H - 2.5, {align:'center'}
+        );
+      }
+    });
+
+    doc.save('road_accident_data.pdf');
+    showToast('PDF downloaded ✓');
+  } catch(err) {
+    console.error(err);
+    showToast('PDF generation failed. Try again.');
+  } finally {
+    overlay.classList.remove('show');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
 </body>
 </html>
