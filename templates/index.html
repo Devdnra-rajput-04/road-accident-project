@@ -33,15 +33,25 @@
     <h1>Road Accident<br>Analysis System</h1>
     <p>Data-driven insights for safer roads across India</p>
 
+    <!-- STATS -->
     <div class="hero-stats">
+
+      <!-- TOTAL RECORDS -->
       <div class="hero-stat">
-        <div class="hero-stat-val">{{ total_accidents if total_accidents else '—' }}</div>
+        <div class="hero-stat-val" id="totalRecords">
+          {{ total_records if total_records else 0 }}
+        </div>
         <div class="hero-stat-lbl">Total Records</div>
       </div>
+
+      <!-- TOTAL INJURIES -->
       <div class="hero-stat">
-        <div class="hero-stat-val">{{ total_injuries if total_injuries else '—' }}</div>
+        <div class="hero-stat-val" id="totalInjuries">
+          {{ total_injuries if total_injuries else 0 }}
+        </div>
         <div class="hero-stat-lbl">Total Injuries</div>
       </div>
+
     </div>
 
     <div class="hero-actions">
@@ -49,15 +59,49 @@
       <a href="/data" class="btn btn-outline">🗂 Browse Data</a>
     </div>
 
-    <p class="hero-footer">© 2026 Road Accident Project &nbsp;·&nbsp; Developed by Devendra Rajput</p>
+    <p class="hero-footer">© 2026 Road Accident Project · Developed by Devendra Rajput</p>
   </div>
 </section>
 
+<!-- MENU SCRIPT -->
 <script>
 function toggleMenu(btn) {
   btn.classList.toggle('open');
   document.querySelector('.nav-links-mobile').classList.toggle('open');
 }
 </script>
+
+<!-- 🔥 ANIMATION SCRIPT -->
+<script>
+function animateValue(id, start, end, duration) {
+    let obj = document.getElementById(id);
+    let range = end - start;
+    let startTime = null;
+
+    function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        let progress = Math.min((timestamp - startTime) / duration, 1);
+        let value = Math.floor(progress * range + start);
+
+        obj.innerHTML = value.toLocaleString();
+
+        if (progress < 1) {
+            requestAnimationFrame(step);
+        }
+    }
+
+    requestAnimationFrame(step);
+}
+
+// Run animation after load
+window.onload = function () {
+    let totalRecords = parseInt(document.getElementById("totalRecords").innerText) || 0;
+    let totalInjuries = parseInt(document.getElementById("totalInjuries").innerText) || 0;
+
+    animateValue("totalRecords", 0, totalRecords, 1500);
+    animateValue("totalInjuries", 0, totalInjuries, 1500);
+};
+</script>
+
 </body>
 </html>
