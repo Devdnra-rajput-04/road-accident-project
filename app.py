@@ -146,6 +146,10 @@ def data():
     )
     return render_template("data.html", tables=tables)
 
+@app.route("/api/data")
+def api_data():
+    return jsonify(DF.to_dict(orient="records"))
+
 
 # ── API: Real Filter Endpoint ─────────────────────────────────────────────────
 @app.route("/api/filter")
