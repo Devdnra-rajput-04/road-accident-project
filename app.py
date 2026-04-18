@@ -148,8 +148,21 @@ def data():
 
 @app.route("/api/data")
 def api_data():
-    return jsonify(DF.to_dict(orient="records"))
+    try:
+        df_copy = DF.copy()
 
+        # datetime fix
+        for col in df_copy.columns:
+            if df_copy[col].dtype == 'datetime64[ns]':
+                df_copy[col] = df_copy[col].astype(str)
+
+        # NaN fix
+        df_copy = df_copy.fillna("")
+
+        return jsonify(df_copy.to_dict(orient="records"))
+
+    except Exception as e:
+        return {"error": str(e)}
 
 # ── API: Real Filter Endpoint ─────────────────────────────────────────────────
 @app.route("/api/filter")
