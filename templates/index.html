@@ -16,9 +16,11 @@
     <a href="/dashboard">Dashboard</a>
     <a href="/data">Data</a>
   </div>
-  <div class="hamburger" onclick="toggleMenu(this)" aria-label="Menu">
+
+  <div class="hamburger" onclick="toggleMenu(this)">
     <span></span><span></span><span></span>
   </div>
+
   <div class="nav-links-mobile">
     <a href="/" class="active">🏠 Home</a>
     <a href="/dashboard">📊 Dashboard</a>
@@ -29,7 +31,9 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-card">
+    
     <div class="hero-badge">🚗</div>
+
     <h1>Road Accident<br>Analysis System</h1>
     <p>Data-driven insights for safer roads across India</p>
 
@@ -39,7 +43,7 @@
       <!-- TOTAL RECORDS -->
       <div class="hero-stat">
         <div class="hero-stat-val" id="totalRecords">
-          {{ total_records if total_records else 0 }}
+          {{ total_records }}
         </div>
         <div class="hero-stat-lbl">Total Records</div>
       </div>
@@ -47,19 +51,23 @@
       <!-- TOTAL INJURIES -->
       <div class="hero-stat">
         <div class="hero-stat-val" id="totalInjuries">
-          {{ total_injuries if total_injuries else 0 }}
+          {{ total_injuries }}
         </div>
         <div class="hero-stat-lbl">Total Injuries</div>
       </div>
 
     </div>
 
+    <!-- BUTTONS -->
     <div class="hero-actions">
       <a href="/dashboard" class="btn btn-primary">📊 View Dashboard</a>
       <a href="/data" class="btn btn-outline">🗂 Browse Data</a>
     </div>
 
-    <p class="hero-footer">© 2026 Road Accident Project · Developed by Devendra Rajput</p>
+    <p class="hero-footer">
+      © 2026 Road Accident Project · Developed by Devendra Rajput
+    </p>
+
   </div>
 </section>
 
@@ -75,11 +83,14 @@ function toggleMenu(btn) {
 <script>
 function animateValue(id, start, end, duration) {
     let obj = document.getElementById(id);
+    if (!obj) return;
+
     let range = end - start;
     let startTime = null;
 
     function step(timestamp) {
         if (!startTime) startTime = timestamp;
+
         let progress = Math.min((timestamp - startTime) / duration, 1);
         let value = Math.floor(progress * range + start);
 
@@ -93,8 +104,8 @@ function animateValue(id, start, end, duration) {
     requestAnimationFrame(step);
 }
 
-// Run animation after load
 window.onload = function () {
+
     let totalRecords = parseInt(document.getElementById("totalRecords").innerText) || 0;
     let totalInjuries = parseInt(document.getElementById("totalInjuries").innerText) || 0;
 
